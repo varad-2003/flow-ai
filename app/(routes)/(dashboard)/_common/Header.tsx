@@ -3,12 +3,22 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { LogoutLink, useKindeBrowserClient } from '@kinde-oss/kinde-auth-nextjs';
 import { LogOutIcon, MoonIcon, SunIcon } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 
 const Header = () => {
   const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  const { user } = useKindeBrowserClient();
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) return null
+
   const isDark = theme === "dark";
   return <div className='border-b border-border bg-background'>
     
@@ -39,16 +49,21 @@ const Header = () => {
           <DropdownMenu>
             <DropdownMenuTrigger>
               <Avatar className='size-8 shrink-0 rounded-full'>
-                <AvatarImage src="" />
+                <AvatarImage src={user?.picture || ""}
+                alt={user?.given_name || ""}
+                />
                 <AvatarFallback className='rounded-full'>
-                  TE
+                  {user?.given_name?.charAt(0)}
+                  {user?.family_name?.charAt(0)}
                 </AvatarFallback>
               </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent align='end' className='w-56'>
               <DropdownMenuItem>
-                <LogOutIcon className='h-4 w-4' />
-                <span>Logout</span>
+                <LogoutLink className='w-full flex items-center gap-1'>
+                  <LogOutIcon className='h-4 w-4' />
+                  <span>Logout</span>
+                </LogoutLink>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
