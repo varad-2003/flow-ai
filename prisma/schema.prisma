@@ -1,0 +1,23 @@
+
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+
+model workflow{
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String
+  name     String
+  description    String?
+  flowObject    String @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
