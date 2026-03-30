@@ -10,6 +10,12 @@ type CreateWorkflowPayload = {
     description?: string;
 }
 
+type WorkflowType = {
+    id: string;
+    name: string;
+    flowObject: any;
+}
+
 export const useGetworkflows = () =>{
     return useQuery({
         queryKey: ["workflows"],
@@ -38,4 +44,16 @@ export const useCreateWorkflow = () => {
             toast.error("Failed to create workflow")
         }
     })
+}
+
+export const useGetworkflowById = (workflowId: string) =>{
+    return useQuery({
+        queryKey: ["workflow", workflowId],
+        queryFn: async () => {
+            return await axios.get<{ data: WorkflowType}>(`/api/workflow/${workflowId}`)
+            .then((res) => res.data.data)
+        },
+        enabled: !!workflowId,
+    })
+
 }
