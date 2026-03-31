@@ -7,6 +7,8 @@ import {
   Background,
   BackgroundVariant,
   useReactFlow,
+  Edge,
+  Node,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import Controls from "@/components/workflow/controls";
@@ -14,7 +16,8 @@ import { TOOL_MODE_ENUM, ToolModeType } from "@/constants/workflow";
 import { cn } from "@/lib/utils";
 import NodePanel from "./node-panel";
 import { useWorkflow } from "@/context/workflow-context";
-import { createNode, NodeType } from "@/lib/workflow/node-config";
+import { createNode, NodeType, NodeTypeEnum } from "@/lib/workflow/node-config";
+import StartNode from "@/components/workflow/custom-nodes/start/node";
 
 const initialNodes = [
   { id: "n1", position: { x: 0, y: 0 }, data: { label: "Node 1" } },
@@ -23,15 +26,21 @@ const initialNodes = [
 const initialEdges = [{ id: "n1-n2", source: "n1", target: "n2" }];
 
 const WorkflowCanvas = () => {
-
+  const start_node = createNode({
+    type: NodeTypeEnum.START
+  })
   const { view } = useWorkflow()  
   const { screenToFlowPosition } = useReactFlow()
-  const [nodes, setNodes] = useState(initialNodes);
-  const [edges, setEdges] = useState(initialEdges);
+  const [nodes, setNodes] = useState<Node[]>([start_node]);
+  const [edges, setEdges] = useState<Edge[]>([]);
   const [toolMode, setToolMode] = useState<ToolModeType>(TOOL_MODE_ENUM.HAND)
 
   const isSelectMode = toolMode === TOOL_MODE_ENUM.SELECT
   const isPreview = view === "preview"
+
+  const nodeTypes = {
+    [NodeTypeEnum.START]: StartNode
+  }
 
   const onNodesChange = useCallback(
     (changes: any) =>
@@ -73,6 +82,10 @@ const WorkflowCanvas = () => {
     setNodes((nds) => [...nds, newNode])
   }, [screenToFlowPosition])
 
+  console.log("All nodes", nodes);
+  console.log("All edges", edges);
+  
+  
   return (
     <>
       <div className="flex flex-1 h-full overflow-hidden relative">
@@ -81,6 +94,7 @@ const WorkflowCanvas = () => {
           className={cn(
             isSelectMode ? "cursor-default" : "cursor-grab active:cursor-grabbing"
           )}
+            nodeTypes={nodeTypes}
             nodes={nodes}
             edges={edges}
             onNodesChange={onNodesChange}
@@ -88,11 +102,12 @@ const WorkflowCanvas = () => {
             onDrop={onDrop}
             onDragOver={onDragOver}
             onConnect={onConnect}
-            fitView
+            // fitView
             panOnDrag={!isSelectMode}
             panOnScroll={!isSelectMode}
             zoomOnScroll={!isSelectMode}
             selectionOnDrag={isSelectMode}
+            defaultViewport={{ x: 0, y: 0, zoom: 1.2}}
           >
             <Background 
             variant={BackgroundVariant.Dots}
