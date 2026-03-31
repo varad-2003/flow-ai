@@ -1,6 +1,6 @@
 import { createContext, useContext, useState } from "react";
 
-export type WorkflowView = "edit" | "preiew"
+export type WorkflowView = "edit" | "preview"
 
 interface WorkflowCotextType {
     view: WorkflowView;
