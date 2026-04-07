@@ -19,6 +19,7 @@ import { useWorkflow } from "@/context/workflow-context";
 import { createNode, NodeType, NodeTypeEnum } from "@/lib/workflow/node-config";
 import StartNode from "@/components/workflow/custom-nodes/start/node";
 import AgentNode from "@/components/workflow/custom-nodes/agent/node";
+import IfElseNode from "@/components/workflow/custom-nodes/if-else/node";
 
 const initialNodes = [
   { id: "n1", position: { x: 0, y: 0 }, data: { label: "Node 1" } },
@@ -41,7 +42,8 @@ const WorkflowCanvas = () => {
 
   const nodeTypes = {
     [NodeTypeEnum.START]: StartNode,
-    [NodeTypeEnum.AGENT]: AgentNode
+    [NodeTypeEnum.AGENT]: AgentNode,
+    [NodeTypeEnum.IF_ELSE]: IfElseNode
   }
 
   const onNodesChange = useCallback(
