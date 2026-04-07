@@ -90,9 +90,9 @@ const AgentSettings = ({ id, data}: PropsType) => {
           className='h-9'
           />
         </div>
-        <div className='space-y-2'>
+        <div className='space-y-2 relative'>
           <Label>System Instructions</Label>
-          <MentionInput 
+          <MentionInput  
           nodeId={id}
           value={instructionValue}
           placeholder='You are a helpfull AI assistant'
@@ -101,7 +101,7 @@ const AgentSettings = ({ id, data}: PropsType) => {
           onBlur={() =>handleChange("instructions", instructionValue)}
           />
         </div>
-        <div className='space-y-2'>
+        <div className='space-y-2'> 
           <div className='flex items-center justify-between'>
             <Label>Tools</Label>
             <DropdownMenu>
