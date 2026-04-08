@@ -26,6 +26,7 @@ import { useUpdateWorkflow } from "@/features/use-workflow";
 import { ActionBar, ActionBarGroup, ActionBarItem } from "@/components/ui/action-bar";
 import { Spinner } from "@/components/ui/spinner";
 import { UseUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import ChatView from "@/components/workflow/chat";
 
 const initialNodes = [
   { id: "n1", position: { x: 0, y: 0 }, data: { label: "Node 1" } },
@@ -148,6 +149,8 @@ const WorkflowCanvas = ({workflowId}: { workflowId: string}) => {
             />}
           </ReactFlow>
         </div>
+
+        <ChatView workflowId={workflowId} />
       </div>
 
       <ActionBar
