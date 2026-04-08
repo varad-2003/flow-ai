@@ -22,6 +22,10 @@ import AgentNode from "@/components/workflow/custom-nodes/agent/node";
 import IfElseNode from "@/components/workflow/custom-nodes/if-else/node";
 import CommentNode from "@/components/workflow/custom-nodes/comment/node";
 import EndNode from "@/components/workflow/custom-nodes/end/node";
+import { useUpdateWorkflow } from "@/features/use-workflow";
+import { ActionBar, ActionBarGroup, ActionBarItem } from "@/components/ui/action-bar";
+import { Spinner } from "@/components/ui/spinner";
+import { UseUnsavedChanges } from "@/hooks/use-unsaved-changes";
 
 const initialNodes = [
   { id: "n1", position: { x: 0, y: 0 }, data: { label: "Node 1" } },
@@ -32,12 +36,18 @@ const initialEdges = [{ id: "n1-n2", source: "n1", target: "n2" }];
 const start_node = createNode({
   type: NodeTypeEnum.START
 })
-const WorkflowCanvas = () => {
+const WorkflowCanvas = ({workflowId}: { workflowId: string}) => {
   const { view, nodes, edges, setNodes, setEdges} = useWorkflow()  
   const { screenToFlowPosition } = useReactFlow() 
-  // const [nodes, setNodes] = useState<Node[]>([start_node]);
-  // const [edges, setEdges] = useState<Edge[]>([]);
+  
   const [toolMode, setToolMode] = useState<ToolModeType>(TOOL_MODE_ENUM.HAND)
+
+  const { mutate: updateWorkflow , isPending: isSaving} = useUpdateWorkflow(workflowId)
+
+  const { hasUnsavedChanges, discardChanges } = UseUnsavedChanges({
+    nodes,
+    edges,
+  })
 
   const isSelectMode = toolMode === TOOL_MODE_ENUM.SELECT
   const isPreview = view === "preview"
@@ -90,6 +100,16 @@ const WorkflowCanvas = () => {
     setNodes((nds) => [...nds, newNode])
   }, [screenToFlowPosition, setNodes])
 
+  const handleDiscard = () => {
+    const result = discardChanges()
+    setNodes(result.nodes)
+    setEdges(result.edges)
+  }
+
+  const handleSaveChanges = () => {
+    updateWorkflow({ nodes, edges })
+  }
+
   console.log("All nodes", nodes);
   console.log("All edges", edges);
   
@@ -129,6 +149,34 @@ const WorkflowCanvas = () => {
           </ReactFlow>
         </div>
       </div>
+
+      <ActionBar
+        open={hasUnsavedChanges}
+        side="top"
+        align="center"
+        sideOffset={70}
+        className="max-w-xs"
+      >
+        <ActionBarGroup>
+          <ActionBarItem 
+            disabled={isSaving}
+            variant="ghost"
+            onClick={handleDiscard}
+          >
+            Discard
+          </ActionBarItem>
+          <ActionBarItem
+            disabled={isSaving}
+            variant="ghost"
+            onClick={handleSaveChanges}
+          >
+            {isSaving && < Spinner />}
+            Save Changes
+          </ActionBarItem>
+        </ActionBarGroup>
+      </ActionBar>
+
+
     </>
   );
 };
