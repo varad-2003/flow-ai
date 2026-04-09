@@ -8,6 +8,7 @@ import { Message, MessageContent, MessageResponse } from '@/components/ai-elemen
 import { Loader } from '@/components/ui/loader'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { PromptInput, PromptInputBody, PromptInputFooter, PromptInputMessage, PromptInputSubmit, PromptInputTextarea } from '@/components/ai-elements/prompt-input'
+import { createWorkflowTransport } from '@/lib/transport'
 
 const ChatPanel = ({workflowId}: {workflowId: string}) => {
     const [input, setInput] = useState<string>("")
@@ -17,8 +18,8 @@ const ChatPanel = ({workflowId}: {workflowId: string}) => {
     const { messages, sendMessage, status } = useChat<UIMessage>({
         id: chatId ?? undefined,
         messages: [],
-        transport: new DefaultChatTransport({
-            api: `/api/chat`,
+        transport: createWorkflowTransport({
+            workflowId
         })
     })
 

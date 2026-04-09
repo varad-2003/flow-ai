@@ -2,6 +2,8 @@ import { FileIcon, GitBranch, Globe, MousePointer2Icon, Play, Square } from "luc
 import React from "react";
 import { generateId } from "../helper";
 import { MODELS } from "./constant";
+import { executeStartNode } from "./custom-executors/start-executor";
+
 
 export const NodeTypeEnum = {
     START: "start",
@@ -13,6 +15,11 @@ export const NodeTypeEnum = {
 } as const;
 
 export type NodeType = (typeof NodeTypeEnum)[keyof typeof NodeTypeEnum]
+
+// node executor
+export const NODE_EXECUTORS = {
+    [NodeTypeEnum.START]: executeStartNode
+}
 
 
 type NodeConfigBase = {
@@ -108,6 +115,14 @@ export const getNodeConfig = (type: NodeType) => {
     const nodeType = NODE_CONFIG?.[type]
     if(!nodeType) return null;
     return nodeType
+}
+
+export const getNodeExecutor = (type: NodeType) => {
+    const executor = NODE_EXECUTORS?.[type as keyof typeof NODE_EXECUTORS] 
+    if(!executor) {
+        throw new Error(`No executor found for node type ${type}`)
+    }
+    return executor
 }
 
 export type CreateNodeOptions = {
