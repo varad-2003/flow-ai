@@ -21,7 +21,7 @@ type Condition = {
 };
 
 const OPERATORS = [
-  { label: "Equals", value: "=" },
+  { label: "Equals", value: "==" },
   { label: "Not Equals", value: "!=" },
   { label: "Greater Than", value: ">" },
   { label: "Less Than", value: "<" },

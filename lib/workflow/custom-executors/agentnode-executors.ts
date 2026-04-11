@@ -55,7 +55,7 @@ export async function executeAgentNode(
             case "text-delta":
                 fullText += chunk.text
                 await channel.emit("workflow.chunk", {
-                    type: "data-workflow-Node",
+                    type: "data-workflow-node",
                     id: node.id,
                     data: {
                         id: node.id,
@@ -70,17 +70,38 @@ export async function executeAgentNode(
 
             case "tool-call":
                 await channel.emit("workflow.chunk", {
-                    type: "data-workflow-Node",
+                    type: "data-workflow-node",
                     id: node.id,
                     data: {
                         id: node.id,
                         nodeType: node.type,
                         nodeName: node.data.label,
                         status: "loading",
+                        output: fullText,
                         type: "tool-call",
                         toolCall: {
                             name: chunk.toolName
                         }
+                    }
+                })
+                break;
+
+            case "tool-result":
+                await channel.emit("workflow.chunk", {
+                    type: "data-workflow-node",
+                    id: node.id,
+                    data: {
+                        id: node.id,
+                        nodeType: node.type,
+                        nodeName: node.data.label,
+                        status: "loading",
+                        type: "tool-result",
+                        output: fullText,
+                        toolResult: {
+                            toolCallId: chunk.toolCallId,
+                            name: chunk.toolName,
+                            result: chunk.output
+                        },
                     }
                 })
                 break;

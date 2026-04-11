@@ -2,13 +2,32 @@ import React, { useState } from 'react'
 import {UIMessage, useChat} from"@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
 import { Button } from '@/components/ui/button'
-import { ArrowUp, PlusIcon, SparkleIcon } from 'lucide-react'
+import { AlertCircle, ArrowUp, Check, PlusIcon, SparkleIcon } from 'lucide-react'
 import { Conversation, ConversationContent, ConversationScrollButton } from '@/components/ai-elements/conversation'
 import { Message, MessageContent, MessageResponse } from '@/components/ai-elements/message'
-import { Loader } from '@/components/ui/loader'
+import { Loader, TextShimmerLoader } from '@/components/ui/loader'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { PromptInput, PromptInputBody, PromptInputFooter, PromptInputMessage, PromptInputSubmit, PromptInputTextarea } from '@/components/ai-elements/prompt-input'
 import { createWorkflowTransport } from '@/lib/transport'
+import { getNodeConfig, NodeType } from '@/lib/workflow/node-config'
+import { any, string } from 'zod'
+import { Spinner } from '@/components/ui/spinner'
+import { cn } from '@/lib/utils'
+
+type NodeDataType = {
+    id: string,
+    nodeType: NodeType;
+    nodeName: string;
+    status: "loading" | "error" |"complete";
+    type: 
+    | "text-delta"
+    | "tool-call"
+    | "tool-result"
+    toolCall?: {name: string},
+    toolResult?: {name: string, result: any},
+    output?: any,
+    error?: any,
+}
 
 const ChatPanel = ({workflowId}: {workflowId: string}) => {
     const [input, setInput] = useState<string>("")
@@ -67,8 +86,17 @@ const ChatPanel = ({workflowId}: {workflowId: string}) => {
                                                         {part.text}
                                                     </MessageResponse>
                                                 )
-                                                default:
-                                                    return null;
+                                            case "data-workflow-node":
+                                                const data = part.data as NodeDataType
+
+                                                return (
+                                                    <NodeDisplay 
+                                                        key={`${message.id}-workflow-${index}`}
+                                                        data={data}
+                                                    />
+                                                )
+                                            default:
+                                                 return null;
                                         }
                                     })}
                                 </MessageContent>
@@ -124,6 +152,68 @@ const ChatPanel = ({workflowId}: {workflowId: string}) => {
         </div>
     </div>
   )
+}
+
+type NodeDisplayType = {
+    data : NodeDataType
+}
+
+export const NodeDisplay = ({ data }: NodeDisplayType) => {
+    const nodeConfig = getNodeConfig(data.nodeType)
+    if(!nodeConfig) return null
+
+    const Icon = nodeConfig.icon;
+    const { status, output, error, toolCall, toolResult} = data
+
+    return(
+        <div>
+            <div className={cn(
+                `px-1 py-2 flex items-center gap-2`,
+                status === "loading" && "animate-pulse"
+            )}>
+                {status === "loading" ? (<Spinner />) : status === "error" ? (
+                    <AlertCircle className='text-destructive h-4 w-4' />
+                ) : (
+                    <Icon className="h-4 w-4" />
+                )}
+                <span className='text-sm font-medium'>
+                    {data.nodeName}
+                </span>
+            </div>
+
+            <div>
+                {toolCall || toolResult ? (
+                    <div className='mx-3 my-2 px-3 bg-muted/50 rounded-lg border flex items-center gap-2'>
+                        {toolResult ? (
+                            <>
+                                <Check className='size-4 text-green-500' />
+                                <span className='text-sm'> 
+                                    {toolResult.name}
+                                </span>
+                            </>
+                        ): (
+                            <TextShimmerLoader text={`Calling ${toolCall?.name}...`}/>
+                        )}
+                    </div>
+                ): null}
+                {output && (
+                    <div className='px-3 py-2'>
+                        <MessageResponse>
+                            {typeof output === "string" ? output
+                            : JSON.stringify(output, null, 2)}
+                        </MessageResponse>
+                    </div>
+                )}
+                {status === "error" && (
+                    <div className='p-3 bg-destructive/10 text-destructive rounded-md'>
+                        {JSON.stringify({
+                            error
+                        })}
+                    </div>
+                )}
+            </div>
+        </div>
+    )
 }
 
 export default ChatPanel
