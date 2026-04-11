@@ -3,6 +3,9 @@ import React from "react";
 import { generateId } from "../helper";
 import { MODELS } from "./constant";
 import { executeStartNode } from "./custom-executors/start-executor";
+import { executeAgentNode } from "./custom-executors/agentnode-executors";
+import { executeIfElseNode } from "./custom-executors/IfElse-executor";
+import { executeEndNode } from "./custom-executors/end-executor";
 
 
 export const NodeTypeEnum = {
@@ -18,7 +21,12 @@ export type NodeType = (typeof NodeTypeEnum)[keyof typeof NodeTypeEnum]
 
 // node executor
 export const NODE_EXECUTORS = {
-    [NodeTypeEnum.START]: executeStartNode
+    [NodeTypeEnum.START]: executeStartNode,
+    [NodeTypeEnum.AGENT]: executeAgentNode,
+    [NodeTypeEnum.IF_ELSE]: executeIfElseNode,
+    [NodeTypeEnum.END]: executeEndNode,
+
+
 }
 
 
