@@ -79,8 +79,7 @@ export const { POST } = serve(
             } catch (error){
                 console.error("Workflow execution error:", error);
                 throw error
-            }
-            
+            }   
         })
     },
     {

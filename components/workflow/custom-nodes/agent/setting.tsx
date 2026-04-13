@@ -6,12 +6,13 @@ import MentionInput from '../../mention-input'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { CheckIcon, ChevronsUpDownIcon, Plus, X } from 'lucide-react'
-import { MODELS, TOOLS } from '@/lib/workflow/constant'
+import { MCPToolType, MODELS, TOOLS } from '@/lib/workflow/constant'
 import { Badge } from '@/components/ui/badge'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { cn } from '@/lib/utils'
 import { JsonSchema } from './json-schema'
+import McpDialog from '../../mcp/mcp-dialog'
 
 type PropsType = {
   id: string
@@ -34,6 +35,8 @@ const AgentSettings = ({ id, data}: PropsType) => {
     data?.instructions || ""
   )
 
+  const [mcpDailogOpen, setMcpDailogOpen] = useState(false)
+
   const model = data?.model;
   const tools = data?.tools || []
   const outputFormat = data?.outputFormat || "text"
@@ -51,7 +54,7 @@ const AgentSettings = ({ id, data}: PropsType) => {
 
   const handleAddTool = (toolId: string) =>{
     if(toolId === "mcpServer" ){
-      //opendialog
+      setMcpDailogOpen(true)
       return
     }
     const exists = tools.some(
@@ -68,6 +71,26 @@ const AgentSettings = ({ id, data}: PropsType) => {
         ]
       )
     }
+  }
+
+  const handleAddMcpTool = ({
+    label,
+    serverId,
+    selectedTools,
+  }: {
+    label: string,
+    serverId: string,
+    selectedTools: MCPToolType[]
+  }) => {
+    handleChange("tools", [
+      ...tools,
+      {
+        type: "mcp",
+        label,
+        serverId,
+        tools: selectedTools
+      }
+    ])
   }
 
   const handleRemoveTool = (index: number) => {
@@ -141,7 +164,7 @@ const AgentSettings = ({ id, data}: PropsType) => {
                 const nativeTool = tool.type === "native"
                 ?TOOLS.find((t) => t.id === tool.value) : null
                 const Icon = nativeTool?.icon
-                const label = tool.type === "native" ? nativeTool?.name : tool.name
+                const label = tool.type === "native" ? nativeTool?.name : tool.label
                 return(
                   <Badge key={index} variant="secondary">
                   {Icon && <Icon className="h-4 w-4" />}
@@ -267,6 +290,12 @@ const AgentSettings = ({ id, data}: PropsType) => {
           </div>
         )}
       </div>
+
+      <McpDialog 
+        open={mcpDailogOpen}
+        onOpenChange={setMcpDailogOpen}
+        onAdd={handleAddMcpTool}
+      />
     </>
   )
 }

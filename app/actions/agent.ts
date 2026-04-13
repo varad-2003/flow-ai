@@ -1,8 +1,12 @@
 "use server"
-
+import { createMCPClient } from "@ai-sdk/mcp"
 import { convertToModelMessages, stepCountIs, streamText, UIMessage } from "ai"
 import { webSearch } from "@exalabs/ai-sdk"
 import { openRouter } from "@/lib/openrouter";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
+import prisma from "@/lib/prisma";
+import { decrypt, encrypt } from "@/lib/encryption";
+
 
 export async function streamAgentAction({
     model,
@@ -17,7 +21,7 @@ export async function streamAgentAction({
     jsonOutput?: any,
     selectedTools: Array<
       |  { type: "native"; value: string }
-      |  { type: "mcp"; value: string; tools: []}
+      |  { type: "mcp"; value: string; serverId: string; tools: {name: string} []}
     >
 }){
 
@@ -37,10 +41,20 @@ export async function streamAgentAction({
     ?.filter((msg) => msg !== null)
     // const modelMessages = await convertToModelMessages(history)
     const tools: Record<string, any> = {}
+    const mcpClients:any[] = []
 
     //native tools
     for(const t of selectedTools.filter(t => t.type === "native") as any){
         if(t.value === "webSearch") tools.webSearch = webSearch()
+    }
+
+    for(const t of selectedTools.filter(t => t.type === "mcp")){
+      const { toolSet, mcpClient } = await getMcpToolsByServerId(t.serverId)
+      mcpClients.push(mcpClient)
+      
+      for(const tool of t.tools){
+        if(toolSet[tool.name]) tools[tool.name] = toolSet[tool.name]
+      }
     }
 
     const toolList = Object.entries(tools)?.map(([name]) => `- ${name}`)?.join("\n")
@@ -63,6 +77,12 @@ export async function streamAgentAction({
         tools: Object.keys(tools).length > 0 ? tools : undefined,
         stopWhen: stepCountIs(5),
         ...jsonOutput,
+        onFinish: async () => {
+          console.log(("closing MCP Clients"));
+          for(const Client of mcpClients){
+            await Client.close()
+          }
+        }
     })
 
     return result
@@ -126,4 +146,118 @@ function extractAgentContent(parts: any[]) {
     role: "assistant" as const,
     content: content.length > 0 ? content : ""
   };
+}
+
+async function getMcpToolsByServerId(serverId: string){
+  const server = await prisma.mcpServer.findUnique({
+    where: { id: serverId }
+  })
+  if(!server) throw new Error("MCP Server not found")
+  let apiKey: string | undefined
+
+if (server.token) {
+  console.log("🔍 TOKEN:", server.token)
+  console.log("🔍 SPLIT:", server.token.split(":"))
+
+  try {
+    apiKey = decrypt(server.token)
+  } catch (err) {
+    console.error("❌ BROKEN TOKEN:", server.token)
+    apiKey = undefined
+  }
+}
+  const url = server.url
+
+  const mcpClient = await createMCPClient({
+    transport: {
+      type: "http",
+      url,
+      headers: apiKey ? {
+        Authorization: `Bearer ${apiKey}` 
+      } : undefined
+    }
+  })
+
+  const toolSet = await mcpClient.tools()
+
+  return { toolSet, mcpClient }
+}
+
+export async function connectMcpServer ({
+  url,
+  apiKey
+} : {
+  url: string;
+  apiKey: string;
+}){
+  if(!url || !apiKey){
+    throw new Error("URL and API key are required to connect to MCP server.")
+  }
+
+  const session = await getKindeServerSession();
+  const user = await session.getUser()
+  if(!user) throw new Error("Unauthorized")
+
+  const mcpClient = await createMCPClient({
+    transport: {
+      type: "http",
+      url,
+      headers: apiKey? {
+        Authorization: `Bearer ${apiKey}`
+      } : undefined
+    }
+  })
+
+  const toolSet = await mcpClient.tools()
+  const toolsArray = Object.entries(toolSet)
+    .map(([name, tool]) => ({
+      name,
+      description: tool.description || "",
+    }))
+    await mcpClient.close();
+    return { tools: toolsArray }
+}
+
+export async function addMcpServer ({
+  url,
+  apiKey,
+  label
+} : {
+  url: string,
+  apiKey: string,
+  label: string
+}){
+  const session = await getKindeServerSession();
+  const user = await session.getUser()
+  if(!user) throw new Error("Unauthorized")
+
+  let server = await prisma.mcpServer.findFirst({
+    where: {
+      userId: user.id,
+      url,
+    }
+  })
+
+  const encryptedKey = apiKey ? encrypt(apiKey) : ""
+  if(!server) {
+    server = await prisma.mcpServer.create({
+      data:{
+        userId: user.id,
+        label,
+        url,
+        token: encryptedKey 
+
+      }
+    })
+  } else {
+    server = await prisma.mcpServer.update({
+      where: {id: server.id},
+      data: {
+        label,
+        token: encryptedKey
+      }
+    })
+  }
+
+  return { serverId: server.id }
 }
